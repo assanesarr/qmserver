@@ -1,0 +1,26 @@
+{
+  "name": "qmserver",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Assane Sarr",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node main.js",
+    "start": "node main.js",
+    "migrate": "drizzle-kit migrate --config ./drizzle.config.ts",
+    "generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
+    "express": "^5.2.1",
+    "mysql2": "^3.16.0",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.8"
+  }
+}
