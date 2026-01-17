@@ -51,29 +51,26 @@ io.on("connection", (socket) => {
             .set({ status: 'CALLED', calledAt: new Date(), guichet: data.guichet })
             .where(and(eq(tickets.id, data.id), eq(tickets.status, 'WAITING')))
             .then(async ([tk]) => {
-                console.log("Ticket called:", data);
+
                 if (tk.affectedRows === 1) {
-                    const tkts = await db.select().from(tickets)
+                    const [tkts] = await db.select().from(tickets)
                         .where(eq(tickets.status, 'WAITING'))
                         // .orderBy(desc(tickets.id))
                         .limit(1);
-                    if (tkts.length > 0) {
-                        io.emit('ticket-called', { ticketId: tkts[0].id, guichet: data.guichet });
-                    } else {
-                        io.emit('ticket-called', { ticketId: null });
-                    }
+
+                    io.emit('ticket-called', data);
+
+                    const [result] = await db
+                        .select({ total: count() })
+                        .from(tickets)
+                        .where(eq(tickets.status, 'WAITING'))
+                    io.emit('ticket-next', { ...tkts, totalWaiting: result.total });
                     return;
                 }
-                io.emit('ticket-called', { ticketId: null });
-
-                // console.log(`Ticket ${JSON.stringify(tickets.status)} status updated to CALLED.`);
-
+                console.log("No ticket updated. It might have been already called.");
             }).catch(err => {
                 console.error("Error updating ticket status:", err);
             });
-
-        // console.log("Received JSON:", data);
-        // io.emit('ticket-called', data);
     });
 
     socket.on("disconnect", () => {
@@ -84,12 +81,17 @@ io.on("connection", (socket) => {
 app.use('/api/v2', apiV2Router);
 
 
-app.get('/', async (req, res) => {
-    const tkts = await db.select().from(tickets)
+app.get('/next', async (req, res) => {
+    const [tkts] = await db.select().from(tickets)
         .where(eq(tickets.status, 'WAITING'))
-        .orderBy(desc(tickets.id));
+        .limit(1);
 
-    res.json(tkts)
+    const [result] = await db
+        .select({ total: count() })
+        .from(tickets)
+        .where(eq(tickets.status, 'WAITING'))
+
+    res.json({ ...tkts, totalWaiting: result.total })
 })
 
 app.post('/ticket', async (req, res) => {
@@ -105,17 +107,27 @@ app.post('/ticket', async (req, res) => {
         .from(tickets)
         .where(eq(tickets.id, ticket.insertId))
 
-    // console.log('New ticket created with ID:', tck);
-
     const [result] = await db
         .select({ total: count() })
         .from(tickets)
         .where(eq(tickets.status, 'WAITING'))
 
+    const [tkts] = await db.select().from(tickets)
+        .where(eq(tickets.status, 'WAITING'))
+        .limit(1);
     const totalWaiting = result.total
-
+    io.emit('ticket-next', { ...tkts, totalWaiting });
     res.json({ ...tck, ticketId: tck.id, totalWaiting });
 });
+
+app.get('/history', async (req, res) => {
+    const tkts = await db.select().from(tickets)
+        .where(eq(tickets.status, 'CALLED'))
+        .orderBy(desc(tickets.id))
+        .limit(4);
+
+    res.json(tkts)
+})
 
 app.post('/reset', async (req, res) => {
     'TRUNCATE [TABLE] tbl_name'
