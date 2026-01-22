@@ -6,12 +6,12 @@ export const ticketStatusEnum = mysqlEnum('ticket_status', [
   'SERVED',
 ])
 
-// export const users = mysqlTable('users', {
-//   id: int('id').primaryKey().autoincrement(),
-//   name: varchar('name', { length: 100 }).notNull(),
-//   email: varchar('email', { length: 150 }).unique(),
-//   createdAt: timestamp('created_at').defaultNow(),
-// })
+export const users = mysqlTable('users', {
+  id: int('id').primaryKey().autoincrement(),
+  name: varchar('name', { length: 100 }).notNull(),
+  email: varchar('email', { length: 150 }).unique(),
+  createdAt: timestamp('created_at').defaultNow(),
+})
 
 export const tickets = mysqlTable('tickets', {
   id: int('id').primaryKey().autoincrement(),
